@@ -1,7 +1,6 @@
 from flask import Flask, request, jsonify, send_from_directory
 from openai import OpenAI
-import os
-import json
+import os, json
 
 app = Flask(__name__)
 
@@ -28,7 +27,7 @@ def voice():
     global conversation_history
     audio_file = request.files["audio"]
 
-    # Folosește Whisper API de la OpenAI
+    # Whisper API
     result = client.audio.transcriptions.create(
         model="whisper-1",
         file=audio_file
@@ -53,5 +52,4 @@ def voice():
 
     return jsonify({"transcript": user_text, "answer": ai_answer})
 
-if __name__ == "__main__":
-    app.run()
+# Nu mai folosi app.run() pe Vercel
