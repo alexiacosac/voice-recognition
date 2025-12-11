@@ -74,7 +74,7 @@ document.getElementById("startBtn").onclick = async () => {
             formData.append("audio", blob, "voice.mp4");
 
             try {
-                let response = await fetch("/voice", { method: "POST", body: formData });
+                let response = await fetch("/api/voice", { method: "POST", body: formData });
                 let data = await response.json();
 
                 let cleanedAnswer = cleanText(data.answer);
