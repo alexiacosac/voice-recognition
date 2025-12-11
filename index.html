@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>✨ Smart Mirror Voice Assistant ✨</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+
+<body>
+
+<h2>✨ Smart Mirror Voice Assistant ✨</h2>
+
+<div class="button-row">
+    <button id="startBtn">▶️ Start Recording</button>
+    <button id="stopBtn" disabled>⏹️ Stop Recording</button>
+    <button id="stopSpeakBtn" disabled>🔇 Stop Speaking</button>
+</div>
+
+<p id="status"></p>
+
+<div class="card">
+    <p><b>You asked:</b> <span id="transcript" class="transcript-text"></span></p>
+    <p><b>Mirror's Answer:</b> <span id="answer" class="answer-text"></span></p>
+</div>
+
+<script>
+let mediaRecorder;
+let chunks = [];
+let utterance;
+
+// Curăță textul de caractere speciale și emoji
+// Curăță textul de caractere speciale, emoji și Markdown (#, *, _, /, \, etc.)
+function cleanText(text) {
+    // Elimină Markdown (*, _, `, ~, #)
+    text = text.replace(/[*_`~#]/g, "");
+
+    // Elimină emoji-urile Unicode
+    text = text.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|[\uD83C-\uDBFF\uDC00-\uDFFF])/g, "");
+
+    // Elimină slash-uri
+    text = text.replace(/[\/\\]/g, "");
+
+    // Elimină spațiile multiple
+    text = text.replace(/\s{2,}/g, " ");
+
+    return text.trim();
+}
+
+
+// Voce feminină
+function setFemaleVoice(utterance) {
+    let voices = speechSynthesis.getVoices();
+    const femaleVoice = voices.find(v => v.name.includes("Female") || v.name.includes("Samantha") || v.name.includes("Amelie"));
+    if (femaleVoice) utterance.voice = femaleVoice;
+}
+
+// START RECORDING
+document.getElementById("startBtn").onclick = async () => {
+    try {
+        // Oprește orice TTS curent
+        if (speechSynthesis.speaking) speechSynthesis.cancel();
+
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        chunks = [];
+
+        mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/mp4" });
+        mediaRecorder.ondataavailable = e => chunks.push(e.data);
+
+        mediaRecorder.onstop = async () => {
+            document.getElementById("status").innerText = "✨ Mirror is thinking...";
+
+            let blob = new Blob(chunks, { type: "audio/mp4" });
+            let formData = new FormData();
+            formData.append("audio", blob, "voice.mp4");
+
+            try {
+                let response = await fetch("/voice", { method: "POST", body: formData });
+                let data = await response.json();
+
+                let cleanedAnswer = cleanText(data.answer);
+
+                document.getElementById("transcript").innerText = data.transcript;
+                document.getElementById("answer").innerText = cleanedAnswer;
+                document.getElementById("status").innerText = "✨ Done!";
+
+                // TTS cu voce feminină
+                utterance = new SpeechSynthesisUtterance(cleanedAnswer);
+                setFemaleVoice(utterance);
+                speechSynthesis.speak(utterance);
+                document.getElementById("stopSpeakBtn").disabled = false;
+
+            } catch (err) {
+                document.getElementById("status").innerText = "Error: " + err;
+            }
+
+            document.getElementById("startBtn").disabled = false;
+            document.getElementById("stopBtn").disabled = true;
+        };
+
+        mediaRecorder.start();
+        document.getElementById("status").innerText = "✨ Recording...";
+        document.getElementById("startBtn").disabled = true;
+        document.getElementById("stopBtn").disabled = false;
+
+    } catch (err) {
+        alert("Microphone error: " + err);
+    }
+};
+
+// STOP RECORDING
+document.getElementById("stopBtn").onclick = () => {
+    if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop();
+        document.getElementById("status").innerText = "✨ Stopping...";
+    }
+};
+
+// STOP SPEAKING
+document.getElementById("stopSpeakBtn").onclick = () => {
+    if (speechSynthesis.speaking) {
+        speechSynthesis.cancel();
+        document.getElementById("stopSpeakBtn").disabled = true;
+        document.getElementById("status").innerText = "✨ Speaking stopped.";
+    }
+};
+</script>
+
+</body>
+</html>
