@@ -29,12 +29,14 @@
         let chunks = [];
         let utterance;
 
-        // Curăță textul de caractere speciale și emoji
-        // Curăță textul de caractere speciale, emoji și Markdown (#, *, _, /, \, etc.)
-        function cleanText(text) {
-            // Dacă textul este null sau undefined, returnează un șir gol
-            if (!text) return "";
+        // Asigură-te că vocile sunt încărcate în fundal pentru iOS
+        speechSynthesis.getVoices();
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = speechSynthesis.getVoices;
+        }
 
+        function cleanText(text) {
+            if (!text) return "";
             text = text.replace(/[*_`~#]/g, "");
             text = text.replace(/([\u2700-\u27BF]|[\uE000-\uF8FF]|[\uD83C-\uDBFF\uDC00-\uDFFF])/g, "");
             text = text.replace(/[\/\\]/g, "");
@@ -42,24 +44,35 @@
             return text.trim();
         }
 
-
-        // Voce feminină
         function setFemaleVoice(utterance) {
             let voices = speechSynthesis.getVoices();
-            const femaleVoice = voices.find(v => v.name.includes("Female") || v.name.includes("Samantha") || v.name.includes("Amelie"));
-            if (femaleVoice) utterance.voice = femaleVoice;
+            // Căutăm Samantha (standard pe iPhone) sau orice voce feminină de engleză
+            let femaleVoice = voices.find(v => v.name.includes("Samantha") || v.name.includes("Female"));
+
+            // Dacă nu găsește după nume, alege prima voce de engleză disponibilă
+            if (!femaleVoice) {
+                femaleVoice = voices.find(v => v.lang.startsWith("en"));
+            }
+
+            if (femaleVoice) {
+                utterance.voice = femaleVoice;
+                utterance.lang = femaleVoice.lang;
+            }
         }
 
-        // START RECORDING
         document.getElementById("startBtn").onclick = async () => {
             try {
-                // Oprește orice TTS curent
+                // ACTIVARE SUNET iPHONE: Un sunet mut care "deschide" canalul audio
+                const wakeup = new SpeechSynthesisUtterance("");
+                speechSynthesis.speak(wakeup);
+
                 if (speechSynthesis.speaking) speechSynthesis.cancel();
 
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 chunks = [];
 
-                mediaRecorder = new MediaRecorder(stream, { mimeType: "audio/mp4" });
+                // Lăsăm Safari să decidă formatul optim (mp4/aac)
+                mediaRecorder = new MediaRecorder(stream);
                 mediaRecorder.ondataavailable = e => chunks.push(e.data);
 
                 mediaRecorder.onstop = async () => {
@@ -74,20 +87,24 @@
                         let data = await response.json();
 
                         if (data.error) {
-                            document.getElementById("status").innerText = "Error from server: " + data.error;
-                            return; // Oprește execuția dacă avem eroare de la Python
+                            document.getElementById("status").innerText = "Error: " + data.error;
+                            return;
                         }
 
                         let cleanedAnswer = cleanText(data.answer);
-                        // ... restul codului
-
                         document.getElementById("transcript").innerText = data.transcript;
                         document.getElementById("answer").innerText = cleanedAnswer;
                         document.getElementById("status").innerText = "✨ Done!";
 
-                        // TTS cu voce feminină
+                        // Pregătire Voce
                         utterance = new SpeechSynthesisUtterance(cleanedAnswer);
                         setFemaleVoice(utterance);
+
+                        // Parametri optimi pentru claritate
+                        utterance.volume = 1;
+                        utterance.rate = 0.9; // Puțin mai lent pentru un efect magic
+                        utterance.pitch = 1.1; // Puțin mai feminin
+
                         speechSynthesis.speak(utterance);
                         document.getElementById("stopSpeakBtn").disabled = false;
 
@@ -109,24 +126,17 @@
             }
         };
 
-        // STOP RECORDING
         document.getElementById("stopBtn").onclick = () => {
             if (mediaRecorder && mediaRecorder.state !== "inactive") {
                 mediaRecorder.stop();
-                document.getElementById("status").innerText = "✨ Stopping...";
             }
         };
 
-        // STOP SPEAKING
         document.getElementById("stopSpeakBtn").onclick = () => {
-            if (speechSynthesis.speaking) {
-                speechSynthesis.cancel();
-                document.getElementById("stopSpeakBtn").disabled = true;
-                document.getElementById("status").innerText = "✨ Speaking stopped.";
-            }
+            speechSynthesis.cancel();
+            document.getElementById("stopSpeakBtn").disabled = true;
         };
     </script>
-
 </body>
 
 </html>
