@@ -19,7 +19,7 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 # Istoric în memorie (Vercel nu permite scrierea de fișiere .json permanente)
 conversation_history = []
 
-SYSTEM_PROMPT = "You are a friendly AI assistant like the magic mirror in Snow White. Respond concisely."
+SYSTEM_PROMPT = "You are a friendly AI assistant like the magic mirror in Snow White. Respond as if you were the Magic Mirror from Snow White movie."
 
 @app.route("/")
 def index():
