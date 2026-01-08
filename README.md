@@ -42,4 +42,4 @@ Project Flow
 3. Audio is sent to the backend
 4. Speech is transcribed using AI
 5. AI generates a response
-6. The response is displayed and spoken aloud
+6. The response is displayed, spoken and can be stopped by pressing a button.
