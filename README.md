@@ -1,5 +1,7 @@
 Voice Recognition Web Assistant
 
+Live Version: https://voice-recognition-try1.vercel.app/
+
 This project is a web-based voice interaction application that allows users to communicate with an AI assistant using their microphone. The user speaks a question, the spoken input is transcribed and displayed on the screen and the assistant responds both in text and spoken audio.
 
 The application runs entirely as a web app and is deployed on Vercel. It combines browser-based voice recording and speech synthesis with a Python backend that handles AI processing.
