@@ -31,10 +31,10 @@ def voice():
 
     audio_file = request.files["audio"]
 
-    if os.name == 'nt':  # 'nt' înseamnă Windows
-        temp_path = "input_temp.mp4" # Salvează direct în folderul proiectului pe laptop
+    if os.name == 'nt': 
+        temp_path = "input_temp.mp4" 
     else:
-        temp_path = "/tmp/input.mp4" # Salvează în folderul temporar pe Vercel
+        temp_path = "/tmp/input.mp4"
 
     audio_file.save(temp_path)
 
